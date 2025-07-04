@@ -1,0 +1,352 @@
+-------------------------------------------------------------------
+|||||||||||||||||||||    JOINS  |||||||||||||||||||||||||||||||||||
+-------------------------------------------------------------------
+
+-------------------------------------------------------------------
+| 		        Primer Paso (Punto 1) 			  |
+-------------------------------------------------------------------
+
+1. Obtener la lista de todos los pedidos con los nombres de clientes usando INNER JOIN.
+
+Bien, primero que todo, como sabemos, no hay ningún dato en la base de datos, por ende, en cada punto que pase, asignaremos algunos. Necesitaremos pedidos y clientes.
+
+Primero, insertaremos en clientes, el nombre del cliente:
+
+INSERT INTO clientes (nombre) VALUES 
+('Brayden Poveda'),
+('Sharon Acosta');
+
+Segundo, ahora insertaremos la lista de todos los pedidos:
+
+INSERT INTO pedidos (cliente_id, fecha, total) VALUES 
+(1, '2025-06-01', 105.00),
+(2, '2025-06-02', 120.00);
+
+Una vez hecho esto, ejecutaremos el siguiente comando para comprobar si esta bien:
+
+SELECT p.id AS pedido_id, p.fecha, c.nombre, p.total
+FROM Pedidos p
+INNER JOIN Clientes c ON p.cliente_id = c.id;
+
+Tendría que salir esto:
+
++-----------+------------+----------------+--------+
+| pedido_id | fecha      | nombre         | total  |
++-----------+------------+----------------+--------+
+|         1 | 2025-06-01 | Brayden Poveda | 105.00 |
+|         2 | 2025-06-02 | Sharon Acosta  | 120.00 |
++-----------+------------+----------------+--------+
+
+-------------------------------------------------------------------
+| 		        Segundo Paso (Punto 2) 			  |
+-------------------------------------------------------------------
+
+2. Listar los productos y proveedores que los suministran con INNER JOIN .
+
+Bien, en este apartado me piden productos y proveedores, asi que procedere a mostrar el ejercicio.
+
+Como mencione anteriormente, cometí el error de no poner los datos a la tabla, entonces, lo haremos ahora mismo. Solo que esta vez, para poder dar el nombre al contacto, adicionare la tabla contactoproveedores.
+
+Primero, insertamos datos en la tabla proveedores para poder continuar con los contactoproveedores.
+
+INSERT INTO Proveedores (nombre, direccion) VALUES
+('Campuslands', ' Km 4 del Anillo Vial, Floridablanca, Santander,'),
+('PeluchinShop', 'Cra 55 #69-21');
+
+
+Una vez hecho esto, podemos ahora si, poner los contactos de este.
+
+INSERT INTO contactoproveedores (proveedores_id, contacto_nombre, telefono, email) VALUES
+(1, 'Johlver Pardo', '1234567890', 'johlverpardo@gmail.com'),
+(1, 'Karen Celis', '987123456', 'karencelis@gmail.com'),
+(2, 'Alvaro Reyes', '3028875814', 'alvaroreyes@hotmail.com');
+
+Después de esto, ahora si vincularemos e insertaremos los productos:
+
+INSERT INTO productos (nombre, precio, proveedor_id, tipo_id) VALUES
+('Laptop Pro 15', 3500.00, 1, NULL),
+('Mouse Gamer RGB', 120.50, 1, NULL),
+('Impresora Láser X120', 900.00, 1, NULL),
+('Resma de papel carta', 25.00, 2, NULL),
+('Corona de reyes', 150.00, 2, NULL);
+
+SELECT 
+  p.nombre AS nombre_producto,
+  p.precio,
+  pr.nombre AS nombre_proveedor
+FROM productos p
+JOIN proveedores pr ON p.proveedor_id = pr.id;
+
+
+-------------------------------------------------------------------
+| 		        Tercer Paso (Punto 3) 			  |
+-------------------------------------------------------------------
+
+3. Mostrar los pedidos y las ubicaciones de los clientes con LEFT JOIN
+
+Como ya sabemos tenemos los clientes, asi que agregaremos solo la ubicación de los clientes con su respectiva entidad.
+
+
+Verificamos que esten los clientes con:
+
+SELECT id, nombre FROM clientes;
+
+Una vez esten, entonces, procedemos a ejecutar las ubicaciones:
+
+INSERT INTO ubicaciones (entidad_id, tipo_entidad, direccion, ciudad, estado, codigo_postal, pais) VALUES
+(1, 'cliente', 'Cra 33 #29-06', 'Giron', 'Santander', '020391', 'Colombia'),
+(2, 'cliente', 'Calle 101 #22a-51', 'Provenza', 'Santander', '201591', 'Colombia');
+
+Una vez implementado, procederemos a ejecutar:
+
+SELECT 
+  p.id AS pedido_id, p.fecha,
+  c.nombre AS nombre_cliente,
+  u.direccion, u.ciudad, u.estado, u.pais
+FROM pedidos p
+JOIN clientes c ON p.cliente_id = c.id
+LEFT JOIN ubicaciones u ON u.entidad_id = c.id AND u.tipo_entidad = 'cliente';
+
++-----------+------------+----------------+-------------------+----------+-----------+----------+
+| pedido_id | fecha      | nombre_cliente | direccion         | ciudad   | estado    | pais     |
++-----------+------------+----------------+-------------------+----------+-----------+----------+
+|         1 | 2025-06-01 | Brayden Poveda | Cra 33 #29-06     | Giron    | Santander | Colombia |
+|         2 | 2025-06-02 | Sharon Acosta  | Calle 101 #22a-51 | Provenza | Santander | Colombia |
++-----------+------------+----------------+-------------------+----------+-----------+----------+
+
+Saldría esta tabla.
+
+-------------------------------------------------------------------
+| 		        Cuarto Paso (Punto 4) 			  |
+-------------------------------------------------------------------
+
+4. Consultar los empleados que han registrado pedidos, incluyendo empleados sin pedidos
+( LEFT JOIN ).
+
+Bien, aquí hay un concepto inusual, y es que, aunque hayamos normalizado las tablas, aquí aplica algo mas lógico, y es que se relaciona empleados y pedidos, por ende es una relación muchos a muchos, para eso, me veo en la necesidad de crear una tabla intermedia que me permita hacer que podamos seguir con el INSERT INTO y sus demás cosas.
+
+CREATE TABLE IF NOT EXISTS pedidosempleados (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    empleado_id INT NOT NULL,
+    pedido_id INT NOT NULL,
+    fecha_asignacion DATE,
+    FOREIGN KEY (empleado_id) REFERENCES datosempleados(id),
+    FOREIGN KEY (pedido_id) REFERENCES pedidos(id)
+);
+
+Ya podemos seguir.
+
+Primero que todo, como sabemos, debemos insertar datos en los puestos para poder continuar:
+
+INSERT INTO puestos (nombre, salario_base) VALUES
+('Vendedor', 1800.00),
+('Supervisor', 2000.00),
+('Administrador', 2500.00);
+
+
+Seguiremos con el datosempleados:
+
+INSERT INTO datosempleados (nombre_empleado, puesto_id, salario, fecha_contratacion) VALUES
+('Daniela Herrera', 1, 1800.00, '2024-06-30'),
+('Juan Romero', 2, 2000.00, '2023-12-08'),
+('David Lopez',3,2500.00,'2022-08-08');
+
+Y luego continuaremos con el pedidosempleados:
+
+INSERT INTO PedidosEmpleados (empleado_id, pedido_id, fecha_asignacion) VALUES
+(3, 1, '2025-06-01'),
+(4, 2, '2025-06-02');
+
+La duda es, porque es 3 y 4? pues, aunque suene raro, tal vez fue algún error mio que no note, ya que los empleados en vez de salirme 1,2,3 como los estableci, me aparecen en 3,4,5..
+
+
+Ejecutamos la consulta:
+
+SELECT 
+  de.nombre_empleado,
+  pe.pedido_id,
+  p.fecha, p.total
+FROM datosempleados de
+LEFT JOIN pedidosempleados pe ON de.id = pe.empleado_id
+LEFT JOIN pedidos p ON pe.pedido_id = p.id;
+
+Vemos que el empleado 'David Lopez' tiene todo el valor NULL, esto debido a que claramente, no se le ha asignado algún pedidosempleados. (solo id 3,4)
+
+
+-------------------------------------------------------------------
+| 		        Quinto Paso (Punto 5) 			  |
+-------------------------------------------------------------------
+
+5. Obtener el tipo de producto y los productos asociados con INNER JOIN.
+
+Bien, empezaremos estableciendo el INSERT INTO a los tipos de productos, pero, antes de eso, hay algo que vota un errorcito y es el categoria_jerarquica_id, para solucionar esto, he decidido ponerla en NULL. 
+
+Comando: ALTER TABLE tiposproductos MODIFY categoria_jerarquica_id INT NULL;
+
+Ejecutado esto, ahora si podemos insertar el código:
+
+INSERT INTO tiposproductos(tipo_nombre, descripcion) VALUES
+('Tecnología', 'Dispositivos electrónicos y periféricos'),
+('Papelería', 'Material de oficina y papel'),
+('Repostería', 'Alimentos dulces y de temporada');
+
+Bien, ya que tenemos esto, los productos podremos actualizarlos haciéndole el UPDATE para que queden organizados y respectivos a sus tipos de producto.
+
+UPDATE productos SET tipo_id = 1 WHERE nombre IN ('Laptop Pro 15', 'Mouse Gamer RGB', 'Impresora Láser X120');
+UPDATE productos SET tipo_id = 2 WHERE nombre = 'Resma de papel carta';
+UPDATE productos SET tipo_id = 3 WHERE nombre = 'Corona de reyes';
+
+Si suelta algún problema, es porque las ids están en 456, por ende he decidido hacer lo siguiente:
+
+DELETE FROM tiposproductos;
+ALTER TABLE tiposproductos AUTO_INCREMENT = 1;
+
+y una vez hecho esto, podemos volver a introducir los tipos de producto.
+
+Una vez todo este ok, ejecutaremos la consulta:
+
+
+SELECT
+  p.id AS producto_id,
+  p.nombre AS nombre_producto,
+  p.precio,
+  tp.tipo_nombre,
+  tp.descripcion
+FROM productos p
+INNER JOIN tiposproductos tp ON p.tipo_id = tp.id;
+
++-------------+----------------------+---------+-------------+-----------------------------------------+
+| producto_id | nombre_producto      | precio  | tipo_nombre | descripcion                             |
++-------------+----------------------+---------+-------------+-----------------------------------------+
+|           1 | Laptop Pro 15        | 3500.00 | Tecnología  | Dispositivos electrónicos y periféricos |
+|           2 | Mouse Gamer RGB      |  120.50 | Tecnología  | Dispositivos electrónicos y periféricos |
+|           3 | Impresora Láser X120 |  900.00 | Tecnología  | Dispositivos electrónicos y periféricos |
+|           4 | Resma de papel carta |   25.00 | Papelería   | Material de oficina y papel             |
+|           5 | Corona de reyes      |  150.00 | Repostería  | Alimentos dulces y de temporada         |
++-------------+----------------------+---------+-------------+-----------------------------------------+
+
+Nos debe salir algo asi
+
+
+-------------------------------------------------------------------
+| 		        Sexto Paso (Punto 6) 			  |
+-------------------------------------------------------------------
+
+6. Listar todos los clientes y el número de pedidos realizados con COUNT y GROUP BY.
+
+Bien, el lado positivo de todo esto, es que ya tenemos clientes y pedidos, ahora, ejecutaremos la consulta con COUNT y GROUP BY.
+
+
+SELECT 
+  c.id AS cliente_id,
+  c.nombre AS nombre_cliente,
+  COUNT(p.id) AS total_pedidos
+FROM clientes c
+LEFT JOIN pedidos p ON c.id = p.cliente_id
+GROUP BY c.id, c.nombre;
+
+
++------------+----------------+---------------+
+| cliente_id | nombre_cliente | total_pedidos |
++------------+----------------+---------------+
+|          1 | Brayden Poveda |             1 |
+|          2 | Sharon Acosta  |             1 |
++------------+----------------+---------------+
+
+Saldría algo asi.
+
+
+-------------------------------------------------------------------
+| 		        Septimo Paso (Punto 7) 			  |
+-------------------------------------------------------------------
+
+7. Combinar Pedidos y Empleados para mostrar qué empleados gestionaron pedidos
+específicos
+
+Bien, para este punto tenemos la misma ventaja que el 6, ya que tenemos los datos, solo seria hacer la consulta..
+
+SELECT 
+  p.id AS pedido_id,
+  p.fecha, p.total,
+  e.id AS empleado_id,
+  e.nombre_empleado
+FROM pedidos p
+INNER JOIN pedidosempleados pe ON p.id = pe.pedido_id
+INNER JOIN datosempleados e ON pe.empleado_id = e.id
+
+
+-------------------------------------------------------------------
+| 		        Octavo Paso (Punto 8) 			  |
+-------------------------------------------------------------------
+
+8. Mostrar productos que no han sido pedidos ( RIGHT JOIN ).
+
+Para este punto, hay otro caso, y es que no tenemos enlazado el detallespedido, asi que, asignaremos sus detalles con estos valores (haciendo simulación como si se hubiesen pedido esos objetos):
+
+INSERT INTO detallespedido(pedido_id, producto_id, cantidad, precio)
+VALUES 
+(1, 1, 1, 3500.00),
+(1, 2, 2, 120.50);
+
+
+Después de esto, ejecutaremos la consulta:
+
+SELECT 
+  p.id AS producto_id,
+  p.nombre AS nombre_producto,
+  p.precio
+FROM detallespedido dp
+RIGHT JOIN productos p ON dp.producto_id = p.id
+WHERE dp.id IS NULL;
+
++-------------+----------------------+--------+
+| producto_id | nombre_producto      | precio |
++-------------+----------------------+--------+
+|           3 | Impresora Láser X120 | 900.00 |
+|           4 | Resma de papel carta |  25.00 |
+|           5 | Corona de reyes      | 150.00 |
++-------------+----------------------+--------+
+
+Apareceria algo asi
+
+
+-------------------------------------------------------------------
+| 		        Noveno Paso (Punto 9) 			  |
+-------------------------------------------------------------------
+
+9. Mostrar el total de pedidos y ubicación de clientes usando múltiples JOIN .
+
+
+Lo positivo de esto, es que ya tenemos los datos que serian: Clientes, Pedidos y Ubicaciones:
+Solo nos quedaría ejecutar la consulta:
+
+
+SELECT 
+  c.nombre AS nombre_cliente,
+  u.ciudad, u.pais,
+  COUNT(p.id) AS total_pedidos
+FROM clientes c
+LEFT JOIN ubicaciones u ON c.id = u.entidad_id AND u.tipo_entidad = 'Cliente'
+LEFT JOIN pedidos p ON c.id = p.cliente_id
+GROUP BY c.id, c.nombre, u.ciudad, u.pais;
+
+-------------------------------------------------------------------
+| 		        Decimo Paso (Punto 10) 			  |
+-------------------------------------------------------------------
+
+10. Unir Proveedores , Productos , y TiposProductos para un listado completo de inventario.
+
+Este esta genial, porque, ya también tenemos todos los valores, solo queda unirlos como dice la pregunta, por ende, ejecutamos la siguiente consulta:
+
+SELECT 
+  p.id AS producto_id,
+  p.nombre AS nombre_producto,
+  p.precio,
+  tp.tipo_nombre,
+  tp.descripcion AS descripcion_tipo,
+  pr.nombre AS nombre_proveedor,
+  pr.direccion AS direccion_proveedor
+FROM productos p
+INNER JOIN tiposproductos tp ON p.tipo_id = tp.id
+INNER JOIN proveedores pr ON p.proveedor_id = pr.id;
+

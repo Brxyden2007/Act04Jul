@@ -1,0 +1,277 @@
+--------------------------------------------------------------------
+//////////////////////////// CONSULTAS SIMPLES /////////////////////
+--------------------------------------------------------------------
+
+-------------------------------------------------------------------
+| 		        Primer Paso (Punto 1) 			  |
+-------------------------------------------------------------------
+
+1. Seleccionar todos los productos con precio mayor a $50
+
+bien, para este punto haremos la consulta, ya que tenemos todos los datos necesarios podemos hacerlo:
+
+SELECT 
+  id AS producto_id,
+  nombre AS nombre_producto,
+  precio
+FROM productos
+WHERE precio > 50;
+
+Ejecutando esto, el 'Resma de Papel Carta' No saldrá, porque solo se mostraran los valores mayores a $50.
+
+Saldría esto: 
+
++-------------+----------------------+---------+
+| producto_id | nombre_producto      | precio  |
++-------------+----------------------+---------+
+|           1 | Laptop Pro 15        | 3500.00 |
+|           2 | Mouse Gamer RGB      |  120.50 |
+|           3 | Impresora Láser X120 |  900.00 |
+|           5 | Corona de reyes      |  150.00 |
++-------------+----------------------+---------+
+
+
+-------------------------------------------------------------------
+| 		        Segundo Paso (Punto 2) 			  |
+-------------------------------------------------------------------
+
+2. Consultar clientes registrados en una ciudad específica.
+
+Bien, aquí nos pide que consultemos la ciudad especifica de los clientes, si es necesario saber cual ciudad es cada cliente, podemos probar el siguiente comando:
+
+SELECT 
+  c.id AS cliente_id,
+  c.nombre AS nombre_cliente,
+  u.ciudad
+FROM clientes c
+LEFT JOIN ubicaciones u ON c.id = u.entidad_id AND u.tipo_entidad = 'cliente';
+
+una vez sabido esto, podemos ejecutar el siguiente comando para saber de que ciudad especifica proviene el cliente
+
+
+SELECT 
+  c.id AS cliente_id,
+  c.nombre AS nombre_cliente,
+  u.ciudad
+FROM clientes c
+INNER JOIN ubicaciones u 
+  ON c.id = u.entidad_id AND u.tipo_entidad = 'cliente'
+WHERE u.ciudad = 'Provenza';
+
+Saldría esto:
+
++------------+----------------+----------+
+| cliente_id | nombre_cliente | ciudad   |
++------------+----------------+----------+
+|          2 | Sharon Acosta  | Provenza |
++------------+----------------+----------+
+
+-------------------------------------------------------------------
+| 		        Tercer Paso (Punto 3) 			  |
+-------------------------------------------------------------------
+
+3. Mostrar empleados contratados en los últimos 2 años
+
+Esta es la consulta del ejercicio:
+
+SELECT 
+  id AS empleado_id,
+  nombre_empleado,
+  fecha_contratacion
+FROM datosempleados
+WHERE fecha_contratacion >= DATE_SUB(CURDATE(), INTERVAL 2 YEAR);
+
+Donde DATE_SUB(CURDATE(), INTERVAL 2 YEAR) es la que calcula la fecha de hace exactamente 2 años.
+CURDATE() = es la fecha actual del sistema
+
+
+-------------------------------------------------------------------
+| 		        Cuarto Paso (Punto 4) 			  |
+-------------------------------------------------------------------
+
+4. Seleccionar proveedores que suministran más de 5 productos.
+
+Esta es la consulta de los proveedores:
+
+SELECT 
+  pr.id AS proveedor_id,
+  pr.nombre AS nombre_proveedor,
+  COUNT(p.id) AS total_productos
+FROM proveedores pr
+JOIN productos p ON pr.id = p.proveedor_id
+GROUP BY pr.id, pr.nombre
+HAVING COUNT(p.id) >= 3;
+
+Bien, aca hay un caso peculiar, y es que los 2 proveedores que he puesto, ninguno tiene mas de 5 productos. entonces, si lo intentamos con 3 en vez de 5.. Saldra lo siguiente: 
+
++--------------+------------------+-----------------+
+| proveedor_id | nombre_proveedor | total_productos |
++--------------+------------------+-----------------+
+|            1 | Campuslands      |               3 |
++--------------+------------------+-----------------+
+
+-------------------------------------------------------------------
+| 		        Quinto Paso (Punto 5) 			  |
+-------------------------------------------------------------------
+
+5. Listar clientes que no tienen dirección registrada en UbicacionCliente.
+
+Para este caso, tuve que implementar otro cliente sin que tuviese datos, debido a que todos los clientes que estableci (2) Tienen dirección.
+
+INSERT INTO clientes (nombre) VALUES ('Carlos de la Cruz');
+
+Ahora si, ejecutamos la consulta:
+
+SELECT 
+  c.id AS cliente_id,
+  c.nombre AS nombre_cliente
+FROM clientes c
+LEFT JOIN ubicaciones u 
+  ON c.id = u.entidad_id AND u.tipo_entidad = 'Cliente'
+WHERE u.id IS NULL;
+
+Nos tendría que salir entonces: 
++------------+-------------------+
+| cliente_id | nombre_cliente    |
++------------+-------------------+
+|          3 | Carlos de la Cruz |
++------------+-------------------+
+
+
+-------------------------------------------------------------------
+| 		        Sexto Paso (Punto 6) 			  |
+-------------------------------------------------------------------
+
+6. Calcular el total de ventas por cada cliente
+
+Vale, para este punto, será hacer una consulta porque ya tenemos los datos necesarios para poder desarrollarla.
+
+SELECT 
+  c.id AS cliente_id,
+  c.nombre AS nombre_cliente,
+  IFNULL(SUM(p.total), 0) AS total_compras
+FROM clientes c
+LEFT JOIN pedidos p ON c.id = p.cliente_id
+GROUP BY c.id, c.nombre;
+
+
+Nos daría como resultado:
+
++------------+-------------------+---------------+
+| cliente_id | nombre_cliente    | total_compras |
++------------+-------------------+---------------+
+|          1 | Brayden Poveda    |        105.00 |
+|          2 | Sharon Acosta     |        120.00 |
+|          3 | Carlos de la Cruz |          0.00 |
++------------+-------------------+---------------+
+
+IFNULL(SUM(p.total), 0) = asegura que si no hay pedidos, el total sea 0 en lugar de NULL
+
+-------------------------------------------------------------------
+| 		        Septimo Paso (Punto 7) 			  |
+-------------------------------------------------------------------
+
+7. Mostrar el salario promedio de los empleados
+
+Bien, para esto será un poco mas corto, ya que el AVG actúa como average = (promedio)
+
+SELECT 
+  AVG(salario) AS salario_promedio
+FROM datosempleados;
+
++------------------+
+| salario_promedio |
++------------------+
+|      2100.000000 |
++------------------+
+
+Nos saldrá este resultado
+
+Explicación: 
+AVG(salario) = calcula el promedio de todos los valores en la columna salario.
+
+-------------------------------------------------------------------
+| 		        Octavo Paso (Punto 8) 			  |
+-------------------------------------------------------------------
+
+8. Consultar el tipo de productos disponibles en TiposProductos .
+
+Para esto, es similar a lo que hicimos anteriormente para consultar los tipos de producto, solo que en este caso, mostraran a los que tienen productos asociados, van a salir todos debido a que no hay ningún tipo de producto que no este asociado.
+
+SELECT 
+  tp.id AS tipo_id,
+  tp.tipo_nombre, tp.descripcion
+FROM tiposproductos tp
+JOIN productos p ON tp.id = p.tipo_id
+GROUP BY tp.id, tp.tipo_nombre, tp.descripcion;
+
++---------+-------------+-----------------------------------------+
+| tipo_id | tipo_nombre | descripcion                             |
++---------+-------------+-----------------------------------------+
+|       1 | Tecnología  | Dispositivos electrónicos y periféricos |
+|       2 | Papelería   | Material de oficina y papel             |
+|       3 | Repostería  | Alimentos dulces y de temporada         |
++---------+-------------+-----------------------------------------+
+
+Nos saldría esto
+
+
+-------------------------------------------------------------------
+| 		        Noveno Paso (Punto 9) 			  |
+-------------------------------------------------------------------
+
+9. Seleccionar los 3 productos más caros.
+
+Bien, para esto, tendríamos que usar el ORDER BY, que es el que ordena los productos.
+
+SELECT 
+  id AS producto_id,
+  nombre AS nombre_producto,
+  precio
+FROM productos
+ORDER BY precio DESC
+LIMIT 3;
+
+Este seria el resultado:
+
++-------------+----------------------+---------+
+| producto_id | nombre_producto      | precio  |
++-------------+----------------------+---------+
+|           1 | Laptop Pro 15        | 3500.00 |
+|           3 | Impresora Láser X120 |  900.00 |
+|           5 | Corona de reyes      |  150.00 |
++-------------+----------------------+---------+
+
+LIMIT 3 = Restringe el resultado a los tres primeros.
+
+-------------------------------------------------------------------
+| 		        Decimo Paso (Punto 10) 			  |
+-------------------------------------------------------------------
+
+10. Consultar el cliente con el mayor número de pedidos.
+
+Aunque, ahora que caigo en cuenta, claramente solo hay 1 pedido de los 2 clientes, el de id 3 no tiene ninguno, asi que deduzco que sale 'Brayden Poveda' porque es el primero.
+
+SELECT 
+  c.id AS cliente_id,
+  c.nombre AS nombre_cliente,
+  COUNT(p.id) AS cantidad_pedidos
+FROM clientes c
+JOIN pedidos p ON c.id = p.cliente_id
+GROUP BY c.id, c.nombre
+ORDER BY cantidad_pedidos DESC
+LIMIT 1;
+
+Aparecería esto:
+
++------------+----------------+------------------+
+| cliente_id | nombre_cliente | cantidad_pedidos |
++------------+----------------+------------------+
+|          1 | Brayden Poveda |                1 |
++------------+----------------+------------------+
+
+ORDER BY (atributo) DESC = para que el que más pedidos tiene aparezca primero.
+
+(COUNT(p.id)) = Se cuenta cuántos pedidos ha hecho
+
+
