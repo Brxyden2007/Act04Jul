@@ -1,0 +1,304 @@
+/////////////////////////////////////////////////////////
+///////////// 6. Procedimientos Almacenados ////////////////
+/////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////
+-------------------- Punto 1 ----------------------------
+/////////////////////////////////////////////////////////
+
+1. Crear un procedimiento para actualizar el precio de todos los productos de un proveedor.
+
+DELIMITER $$
+
+CREATE PROCEDURE proveedor_act_precio(
+  IN p_proveedor_id INT,
+  IN p_porcentaje DECIMAL(5 ,2)
+)
+BEGIN
+  UPDATE productos
+  SET precio = precio + (precio * (p_porcentaje / 100))
+  WHERE proveedor_id = p_proveedor_id;
+END $$
+
+DELIMITER ;
+
+Utilizacion del Call:
+
+CALL proveedor_act_precio(2, 10.00);  Aqui, se utiliza para aumentar el porcentaje del precio
+CALL proveedor_act_precio(1, -5.00);  Aqui es lo contrario, se baja
+
+/////////////////////////////////////////////////////////
+-------------------- Punto 2 ----------------------------
+/////////////////////////////////////////////////////////
+
+2. Un procedimiento que devuelva la dirección de un cliente por ID.
+
+De por si, aca hay un error, que no deja meter alguna cliente ID asi que metemos el siguiente codigo:
+
+UPDATE ubicacion SET cliente_id = entidad_id WHERE tipo_entidad = 'cliente';
+
+
+DELIMITER $$
+
+CREATE PROCEDURE direccion_cliente(
+  IN p_cliente_id INT
+)
+BEGIN
+  SELECT direccion, ciudad, estado, pais, codigo_postal
+  FROM ubicacion
+  WHERE cliente_id = p_cliente_id;
+END $$
+
+DELIMITER ;
+
+
+Utilizacion del Call:
+
+CALL direccion_cliente('id');
+
+/////////////////////////////////////////////////////////
+-------------------- Punto 3 ----------------------------
+/////////////////////////////////////////////////////////
+
+3. Crear un procedimiento que registre un pedido nuevo y sus detalles.
+
+ -- 1. Insertar el pedido inicialmente con total en 0
+ -- 2. Obtener el ID del nuevo pedido 
+ -- 3. Insertar los detalles del pedido
+ -- 4. Calcular el total
+ -- 5. Actualizar el total del pedido
+ 
+DELIMITER $$
+
+CREATE PROCEDURE registrar_pedido_con_detalles (
+    IN clienteId INT,
+    IN fechaPedido DATE,
+    IN producto1_id INT,
+    IN cantidad1 INT,
+    IN precio1 DECIMAL(10,2),
+    IN producto2_id INT,
+    IN cantidad2 INT,
+    IN precio2 DECIMAL(10,2)
+)
+BEGIN
+    DECLARE nuevoPedidoId INT;
+    DECLARE total DECIMAL(10,2);
+
+    INSERT INTO pedidos (cliente_id, fecha, total)
+    VALUES (clienteId, fechaPedido, 0.00);
+
+    SET nuevoPedidoId = LAST_INSERT_ID();
+
+    
+    INSERT INTO detallespedido (pedido_id, producto_id, cantidad, precio)
+    VALUES 
+        (nuevoPedidoId, producto1_id, cantidad1, precio1),
+        (nuevoPedidoId, producto2_id, cantidad2, precio2);
+
+    
+    SET total = (cantidad1 * precio1) + (cantidad2 * precio2);
+
+   
+    UPDATE pedidos
+    SET total = total
+    WHERE id = nuevoPedidoId;
+END$$
+
+DELIMITER ;
+
+
+Uso del call:
+
+CALL registrar_pedido_con_detalles(
+    1,                 
+    CURDATE(),         
+    1, 2, 100.00,      
+    2, 1, 50.00        
+);
+
+Ubicados en pedidos, detallespedido
+
+/////////////////////////////////////////////////////////
+-------------------- Punto 4 ----------------------------
+/////////////////////////////////////////////////////////
+
+4. Un procedimiento para calcular el total de ventas de un cliente.
+
+DELIMITER $$
+
+CREATE PROCEDURE calcular_total_ventas_cliente (
+    IN p_cliente_id INT
+)
+BEGIN
+    SELECT IFNULL(SUM(total), 0.00) AS total_ventas
+    FROM pedidos
+    WHERE cliente_id = p_cliente_id;
+END$$
+
+DELIMITER ;
+
+
+Usar el CALL:
+
+CALL calcular_total_ventas_cliente(1);
+
+
+/////////////////////////////////////////////////////////
+-------------------- Punto 5 ----------------------------
+/////////////////////////////////////////////////////////
+
+5. Crear un procedimiento para obtener los empleados por puesto.
+
+DELIMITER $$
+
+CREATE PROCEDURE obtener_empleados_por_puesto (
+    IN p_puesto_id INT
+)
+BEGIN
+    SELECT 
+        id,
+        nombre_empleado,
+        puesto_id,
+        salario,
+        fecha_contratacion
+    FROM datosempleados
+    WHERE puesto_id = p_puesto_id;
+END$$
+
+DELIMITER ;
+
+
+Usar el call:
+
+CALL obtener_empleados_por_puesto(1);
+
+/////////////////////////////////////////////////////////
+-------------------- Punto 6 ----------------------------
+/////////////////////////////////////////////////////////
+
+6. Un procedimiento que actualice el salario de empleados por puesto.
+
+DELIMITER $$
+
+CREATE PROCEDURE actualizar_salario_por_puesto (
+    IN p_puesto_id INT,
+    IN p_nuevo_salario DECIMAL(10,2)
+)
+BEGIN
+    UPDATE datosempleados
+    SET salario = p_nuevo_salario
+    WHERE puesto_id = p_puesto_id;
+END$$
+
+DELIMITER ;
+
+Uso del call:
+
+CALL actualizar_salario_por_puesto(2, 4500.00);
+
+/////////////////////////////////////////////////////////
+-------------------- Punto 7 ----------------------------
+/////////////////////////////////////////////////////////
+
+7. Crear un procedimiento que liste los pedidos entre dos fechas.
+
+DELIMITER $$
+
+CREATE PROCEDURE listar_pedidos_entre_fechas (
+    IN p_fecha_inicio DATE,
+    IN p_fecha_fin DATE
+)
+BEGIN
+    SELECT id, cliente_id, fecha, total
+    FROM pedidos
+    WHERE fecha BETWEEN p_fecha_inicio AND p_fecha_fin;
+END$$
+
+DELIMITER ;
+
+Usar el call:
+
+CALL listar_pedidos_entre_fechas('2024-01-01', '2025-07-01');
+
+/////////////////////////////////////////////////////////
+-------------------- Punto 8 ----------------------------
+/////////////////////////////////////////////////////////
+
+8. Un procedimiento para aplicar un descuento a productos de una categoría.
+
+-- Porcentaje: ejemplo 10.00 para 10%
+
+DELIMITER $$
+
+CREATE PROCEDURE aplicar_descuento_categoria (
+    IN p_tipo_nombre VARCHAR(100),
+    IN p_descuento DECIMAL(5,2) 
+)
+BEGIN
+    UPDATE productos
+    SET precio = precio - (precio * (p_descuento / 100))
+    WHERE tipo_id = (
+        SELECT id FROM tiposproductos WHERE tipo_nombre = p_tipo_nombre LIMIT 1
+    );
+END$$
+
+DELIMITER ;
+
+Uso del call:
+
+CALL aplicar_descuento_categoria('Tecnología', 10.00);
+
+/////////////////////////////////////////////////////////
+-------------------- Punto 9 ----------------------------
+/////////////////////////////////////////////////////////
+
+9. Crear un procedimiento que liste todos los proveedores de un tipo de producto
+
+DELIMITER $$
+
+CREATE PROCEDURE listar_proveedores_por_categoria (
+    IN p_tipo_nombre VARCHAR(100)
+)
+BEGIN
+    SELECT DISTINCT pr.id, pr.nombre
+    FROM productos p
+    JOIN proveedores pr ON p.proveedor_id = pr.id
+    WHERE p.tipo_id = (
+        SELECT id FROM tiposproductos WHERE tipo_nombre = p_tipo_nombre LIMIT 1
+    );
+END$$
+
+DELIMITER ;
+
+
+Uso del call:
+
+CALL listar_proveedores_por_categoria('Papelería');
+
+/////////////////////////////////////////////////////////
+-------------------- Punto 10 ---------------------------
+/////////////////////////////////////////////////////////
+
+10. Un procedimiento que devuelva el pedido de mayor valor.
+
+DELIMITER $$
+
+CREATE PROCEDURE pedido_mayor_valor()
+BEGIN
+    SELECT id, cliente_id, fecha, total
+    FROM pedidos
+    WHERE total = (
+        SELECT MAX(total) FROM pedidos
+    );
+END$$
+
+DELIMITER ;
+
+Uso del call:
+
+CALL pedido_mayor_valor();
+
+
+
+
+

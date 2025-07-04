@@ -1,0 +1,188 @@
+///////////////////////////////////
+////// SUBCONSULTAS ///////////////
+///////////////////////////////////
+
+-----------------------------------
+------////// Punto 1 //////--------
+-----------------------------------
+
+1. Consultar el producto más caro en cada categoría.
+
+Bien, para este punto debemos unir el tiposproductos para enlazar bien el nombre de la tabla en el SELECT, asi, tambien podemos hacer la subconsulta de precio dentro de productos.
+
+SELECT p.id, p.nombre, p.precio, t.tipo_nombre
+FROM productos p
+JOIN tiposproductos t ON p.tipo_id = t.id
+WHERE p.precio = (
+    SELECT MAX(p2.precio)
+    FROM productos p2
+    WHERE p2.tipo_id = p.tipo_id
+);
+
+-----------------------------------
+------////// Punto 2 //////--------
+-----------------------------------
+
+2. Encontrar el cliente con mayor total en pedidos.
+
+Bien, aqui agregue el MAX para poder hallar el mayor total establecido de un cliente por todos los pedidos.
+
+SELECT c.id, c.nombre, p.total
+FROM clientes c
+JOIN pedidos p ON p.cliente_id = c.id
+WHERE p.total = (
+SELECT MAX(total)
+FROM pedidos
+);
+
+-----------------------------------
+------////// Punto 3 //////--------
+-----------------------------------
+
+Aquí, hice que el salario sea mayor al promedio y una vez esto, muestre el nombre del empleado y su salario
+
+3. Listar empleados que ganan más que el salario promedio
+
+SELECT id, nombre_empleado, salario
+FROM datosempleados de
+WHERE salario > (
+SELECT AVG(salario) AS promedio_salario
+FROM datosempleados
+);
+
+-----------------------------------
+------////// Punto 4 //////--------
+-----------------------------------
+
+4. Consultar productos que han sido pedidos más de 5 veces.
+
+SELECT id, nombre
+FROM productos
+WHERE id IN (
+    SELECT producto_id
+    FROM detallespedido
+    GROUP BY producto_id
+    HAVING COUNT(producto_id) > 5
+);
+
+-----------------------------------
+------////// Punto 5 //////--------
+-----------------------------------
+
+5. Listar pedidos cuyo total es mayor al promedio de todos los pedidos.
+
+SELECT id, total
+FROM pedidos
+WHERE total > (
+SELECT AVG(total)
+FROM pedidos
+);
+
+-----------------------------------
+------////// Punto 6 //////--------
+-----------------------------------
+
+6. Seleccionar los 3 proveedores con más productos.
+
+SELECT id, nombre
+FROM proveedores
+WHERE id IN (
+  SELECT proveedor_id
+  FROM (
+    SELECT proveedor_id
+    FROM productos
+    GROUP BY proveedor_id
+    ORDER BY COUNT(*) DESC
+    LIMIT 3
+  ) AS top_proveedores
+);
+
+-----------------------------------
+------////// Punto 7 //////--------
+-----------------------------------
+
+7. Consultar productos con precio superior al promedio en su tipo.
+
+SELECT p.id, p.nombre, p.precio, t.tipo_nombre
+FROM productos p
+JOIN tiposproductos t ON p.tipo_id = t.id
+WHERE p.precio > (
+    SELECT AVG(p2.precio)
+    FROM productos p2
+    WHERE p2.tipo_id = p.tipo_id
+); 
+
+Viendo que tengo 3 de tecnologia, 1 de papeleria y 1 de reposteria agregare datos a estos
+
+INSERT INTO productos (nombre, precio, proveedor_id, tipo_id) VALUES 
+('Cartulina negra', 10.00, 2, 2),
+('Caja de lapiceros', 25.00, 2, 2),
+('Croissant', 35.00, 2, 3),
+('Milhojas', 40.00, 2, 3);
+
+
+Ahora si ya quedaria
+
+-----------------------------------
+------////// Punto 8 //////--------
+-----------------------------------
+
+8. Mostrar clientes que han realizado más pedidos que la media.
+
+SELECT c.id, c.nombre, COUNT(p.id) AS total_pedidos
+FROM clientes c
+JOIN pedidos p ON p.cliente_id = c.id
+GROUP BY c.id, c.nombre
+HAVING COUNT(p.id) > (
+  SELECT AVG(pedidos_por_cliente) 
+  FROM (
+    SELECT COUNT(*) AS pedidos_por_cliente
+    FROM pedidos
+    GROUP BY cliente_id
+  ) AS sub
+);
+
+Implementare otro cliente debido a que por ambos tener 1 en el pedido, no habrà ningun que supere el promedio
+
+INSERT INTO clientes (id, nombre)
+VALUES (3, 'Nombrecliente');
+
+Le ponemos pedidos
+
+INSERT INTO pedidos (cliente_id, fecha, total)
+VALUES 
+(3, '2025-07-01', 120.00),
+(3, '2025-07-02', 140.00),
+(3, '2025-07-03', 160.00);
+
+Y ahora si, ejecutamos el codigo principal que es el primero que puse.
+
+-----------------------------------
+------////// Punto 9 //////--------
+-----------------------------------
+
+9. Encontrar productos cuyo precio es mayor que el promedio de todos los productos
+
+SELECT id, nombre, precio
+FROM productos
+WHERE precio > (
+SELECT AVG(precio) AS promedio_total
+FROM productos
+);
+
+-----------------------------------
+------////// Punto 10 //////-------
+-----------------------------------
+
+10. Mostrar empleados cuyo salario es menor al promedio del departamento.
+
+SELECT de.id, de.nombre_empleado, de.salario, p.nombre AS departamento
+FROM datosempleados de
+JOIN puestos p ON de.puesto_id = p.id
+WHERE de.salario < (
+  SELECT AVG(de2.salario)
+  FROM datosempleados de2
+  WHERE de2.puesto_id = de.puesto_id
+);
+
+

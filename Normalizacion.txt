@@ -1,0 +1,490 @@
+-------------------------------------------------------------------
+|||||||||||||||||||||    Normalización  |||||||||||||||||||||||||||
+-------------------------------------------------------------------
+DATOS (A tener en cuenta):
+
+Primera Forma Normal (1FN): 
+Requisitos:
+
++ No debe haber campos multivaluados ni repetitivos.
++ Cada celda debe tener un valor atómico.
+
+Segunda Forma Normal (2FN):
+Requisitos:
+
++ Cumplir 1FN.
++ Eliminar dependencias parciales (es decir, que los atributos dependan completamente de la clave primaria).
+
+Tercera Forma Normal (3FN):
+Requisitos:
+
++ Cumplir 2FN.
++ Eliminar dependencias transitivas: todo atributo no clave debe depender solo de la clave primaria, no de otro atributo no clave.
+
+-------------------------------------------------------------------
+|		     Actividad MySQL (20/06/2025)		  |
+-------------------------------------------------------------------
+
+
+-------------------------------------------------------------------
+|		     Primer Paso (Punto 1)       		  |
+-------------------------------------------------------------------
+
+1. Crear una tabla HistorialPedidos que almacene cambios en los pedidos
+
+
+------------------------ Explicación ------------------------------
+
+Bien, para hacer este punto, opté por crear la tabla de historial pedidos, ¿Qué hice?, bien, lo que hice fue en si la tabla y metí 2 FK, (pedidos, clientes) esto para que quede el historial de los pedidos y del cliente, agregue también la fecha (DATE) y el total (DECIMAL (10,2)) que se agregan en los pedidos para que quede coordinado.
+
+| SOLUCION: |
+
+
+CREATE TABLE IF NOT EXISTS historialPedidos(
+	id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+	pedido_id INT NOT NULL,
+	CONSTRAINT fk_pedido_id
+	FOREIGN KEY (pedido_id)
+	REFERENCES pedidos(id),
+	tipo_cambio VARCHAR(20),
+	fecha_modificacion DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	cliente_id INT NOT NULL,
+	CONSTRAINT fk_cliente_id
+	FOREIGN KEY (cliente_id)
+	REFERENCES clientes(id),
+	fecha DATE NOT NULL,
+	total DECIMAL(10,2)
+	) ENGINE=INNODB;
+		
+-------------------------------------------------------------------
+| 			Segundo Paso (Punto 2)			  |
+-------------------------------------------------------------------
+
+2. Evaluar la tabla Clientes para eliminar datos redundantes y normalizar hasta 3NF.
+
+OBSERVACIONES: He visto que cumple con 1NF y 2NF, sin embargo, como se indica en el punto, de cierta manera, no cumple con la 3NF, asi que la arreglaré.
+
+///////////////////////////////////////////////////////////////////
+//----------------------- Explicación ---------------------------//
+///////////////////////////////////////////////////////////////////
+
+¿ Por qué cumple con 1NF ?
+
+- Cumple con 1NF porque primero que todo, contiene los valores atómicos (nombre, email) y no hay campos repetitivos.
+
+* Atómicos: Se define como aquel que no se puede descomponer más, es decir es INDIVISIBLE.
+
+¿ Por qué cumple con 2NF ?
+
+- Cumple con 2NF porque la primera regla que se debe seguir a la hora de ejecutar esta es que se cumpla el 1FN, por lo cual, ya esta hecha, y la siguiente regla es que requiere que todos los atributos dependan de la clave primaria.
+Como se ve reflejado en la tabla de clientes, estos 2 valores atómicos dependen de la clave primaria que viene siendo id.
+
+¿ Se cumple el 3NF ?
+
+- Enrealidad, de cierta manera si cumple con 3NF, ya que cumple con el 2NF y no tiene ninguna dependencia transitiva, pero, cabe recalcar que podemos registrar una tabla de emails para así poder hacer que no haya ninguna complicación a la hora de que un cliente registre mas emails..
+
+
+| SOLUCION: | 
+	
+Primero que todo, llegue a la conclusión de que una vez teniendo la idea, lo que haré será borrar la columna email, para crear una tabla en la que le hare un FK a clientes, así queda enlazada a esta.
+
+1. ALTER TABLE clientes DROP COLUMN email
+
+Una vez me salga que todo esta ok, revisaré si se borró, si es así, continuaré pero ahora con la creación de la tabla.
+
+CREATE TABLE IF NOT EXISTS emailCliente(
+	id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+	cliente_id INT NOT NULL,
+	CONSTRAINT fk_email_cliente_id
+	FOREIGN KEY (cliente_id)
+	REFERENCES clientes(id),
+	email VARCHAR(100) UNIQUE NOT NULL,
+	tipo_email VARCHAR(20) NOT NULL
+	) ENGINE=INNODB;
+
+Explicación del código: Como se visualiza en el código, he agregado una id para identificar esta tabla, también claramente hice la fk de cliente_id (en el CONSTRAINT puse fk_email_cliente_id debido a que ya había hecho una fk con cliente id (fk_cliente_id) en historialProductos, aunque pude haber puesto simplemente un 2 en vez de email, decidí hacerlo mas especifico) también, establecí el email tal y como estaba en clientes, con el key UNIQUE y también agregue un tipo_email para simular el tipo de email.
+
+-------------------------------------------------------------------
+| 		       Tercer Paso (Punto 3) 			  |
+-------------------------------------------------------------------
+
+3. Separar la tabla Empleados en una tabla de DatosEmpleados y otra para Puestos.
+
+OBSERVACION: Teniendo en cuenta la pregunta, puedo deducir que la tabla Empleados va a ser DatosEmpleados y se creara otra para Puestos. Deduzco que claramente esto será por las reglas FN. Por lo cual, trataré de hacerlas.
+
+Empezaremos a usar las fases de normalización:
+
+1. ¿Cumple con la 1FN?
+
+- La respuesta es si, si cumple, ya que todos los atributos son atomicos y no hay repeticiones en las columnas.
+
+2. ¿Cumple con la 2FN?
+
+- La respuesta vuelve a ser si, ya que primero que todo si cumple con la 1FN, y los atributos dependen completamente de la llave primaria (en este caso, (id))
+
+3. ¿Cumple con la 3FN?
+
+- No, no cumple con la 3FN, esto debido a que hay atributos que dependen de uno a otros y no precisamente al principal que es donde deberían depender, aunque cumple con la 2FN, esta 2da regla hace que no se pueda cumplir por completo el 3FN.
+
+El problema de esto reside en que se crea un tipo cadena, por esto es que se pide que se cree una tabla de Puesto y otra donde estarán los DatosEmpleados.
+
+| SOLUCION: |
+
+1. Creamos la tabla Puestos para poder esclarecer mejor la idea que queremos desarrollar.
+
+CREATE TABLE IF NOT EXISTS puestos(
+	id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+	nombre VARCHAR(50) NOT NULL UNIQUE,
+	salario_base DECIMAL(10,2) NOT NULL
+	) ENGINE=INNODB;
+
+EXPLICACION (1): Una de las preguntas será el porque el nombre se pone en UNIQUE, y es debido a que esto indica el nombre del puesto, por ende, es IRREPETIBLE, no se pueden repetir el nombre de los puestos.
+
+Bien, una vez llegado aca, ya podemos hacer lo de empleados.
+
+¿Qué hare yo?
+
+Bien, mi punto de vista será borrar la tabla 'empleados' para así poder crear la tabla datosEmpleados.
+
+1. DROP TABLE empleados;
+
+Luego verifico si se ha borrado correctamente 
+2. SHOW TABLES; 
+o
+2. DESC empleados;
+
+Una vez borrado, empezare con la creación de DatosEmpleados ya normalizada.
+
+CREATE TABLE IF NOT EXISTS datosEmpleados(
+	id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+	nombre_empleado VARCHAR(100) NOT NULL,
+	puesto_id INT NOT NULL,
+	CONSTRAINT fk_puesto_id
+	FOREIGN KEY (puesto_id)
+	REFERENCES puestos(id),
+	salario DECIMAL(10,2) NOT NULL,
+	fecha_contratacion DATE
+	) ENGINE=INNODB;
+
+Explicación código: Lo que hice aquí fue agregar la ID del empleado, luego su nombre e hice la FK de Puestos, asi queda enlazada con su respectivo puesto, ahora, ¿por qué puse salario y salario_base? Bien, la respuesta es porque aquí se registrará el salario del empleado, mientras que en puestos esta el salario_base que es el salario que gana por el Puesto, y luego agregue la fecha de contratación.
+
+-------------------------------------------------------------------
+| 		       Cuarto Paso (Punto 4) 			  |
+-------------------------------------------------------------------
+4. Revisar la relación Clientes y UbicacionCliente para evitar duplicación de datos.
+
+Revisare la ubicación de clientes y veremos que se cumple todas las 3FN, tal y como explicaremos abajo.
+
+| Solución: |
+
+Revisaremos las tablas, una vez viendo todo esto.
+
+1. DESC clientes;
+
+Revisamos clientes y tenemos sus datos a la mano.
+
+2. DESC ubicacioncliente;
+
+Luego, revisamos ubicacioncliente y compararemos los datos para ver si hay algo que rompa las FN, una vez revisada, empezare a explicar porque si cumple la relación entre estas:
+
+
+OBSERVACION / CONCLUSION:
+
+Primero que todo, lo que haremos será revisar esa relación, para saber si hay o no hay duplicación dependiendo también las FN.
+
+1FN: Primero, están los valores atomicos y no hay campos multievaluados. ESTA BIEN.
+
+2FN: Segundo, se cumple la regla 1FN, ahora, vemos que no hay dependencias parciales, ya que los atributos dependen completamente de la llave primaria. ESTA BIEN.
+
+3FN: Tercero, se cumple la regla 3FN, ahora, ¿hay dependencias transitivas? la respuesta es NO, ya que como vemos, todas dependen de la llave primaria y no hay nada que no dependa de esta. cliente_id es una FK, por ende, es necesario hacer que se ponga ahí, asi tendremos también los datos de clientes en la ubicación sin necesidad de poner nombre del cliente o datos que ya están en la tabla Clientes.
+
+-------------------------------------------------------------------
+| 		       Quinto Paso (Punto 5) 			  |
+-------------------------------------------------------------------
+
+5. Normalizar Proveedores para tener ContactoProveedores en otra tabla.
+
+OBSERVACIONES: 
+Bien, por lo que veo, empezaremos a normalizar la tabla proveedores para hacer que se cree una tabla de contactosproveedores, en la cual deduzco que por ser los contactos, tendrán teléfono, dirección en esa tabla, y le implementaré mas cosas para hacerla mas esclarecida.
+
+OBSERVACIONES (¿Cumplira Proveedores las 3FN?)
+- Empezaremos primero que todo viendo como esta la tabla de proveedores, por ende, haremos lo siguiente:
+
+DESC proveedores;
+
+Aquí, visualizaremos la tabla de proveedores: 
+
++-----------+--------------+------+-----+---------+----------------+
+| Field     | Type         | Null | Key | Default | Extra          |
++-----------+--------------+------+-----+---------+----------------+
+| id        | int          | NO   | PRI | NULL    | auto_increment |
+| nombre    | varchar(100) | YES  |     | NULL    |                |
+| contacto  | varchar(100) | YES  |     | NULL    |                |
+| telefono  | varchar(20)  | YES  |     | NULL    |                |
+| direccion | varchar(255) | YES  |     | NULL    |                |
++-----------+--------------+------+-----+---------+----------------+
+
+Bien, empezaremos a normalizar.
+
+1. ¿Cumple con 1FN?
+
+- La respuesta es si, tiene valores atomicos y no hay campos multievaluados.
+
+2. ¿Cumple con 2FN?
+
+- La respuesta es NO, aunque cumple con la regla 1FN, hay algunos atributos que no dependen precisamente de la llave primaria.
+
+Viendo esto, claramente no cumpliría con la regla 3FN, asi que la explicaremos luego.
+
+NORMALICEMOS: Proveedores
+
+Primero al ver la tabla sabemos que hay que separar contacto para crear ContactoProveedores
+
+Entonces:
+
+- Borramos de la tabla de proveedores, esos datos que no van a servir debido a su dependencia (teléfono depende de contacto, asi que borraremos estas para luego proceder a ponerlas en la tabal contactoproveedores):
+
+ALTER TABLE proveedores
+DROP COLUMN contacto;
+
+ALTER TABLE proveedores
+DROP COLUMN telefono;
+
+Revisamos si se hizo correctamente el procedimiento del DROP:
+
+DESC proveedores;
+
+Tendría que salir así:
+
++-----------+--------------+------+-----+---------+----------------+
+| Field     | Type         | Null | Key | Default | Extra          |
++-----------+--------------+------+-----+---------+----------------+
+| id        | int          | NO   | PRI | NULL    | auto_increment |
+| nombre    | varchar(100) | YES  |     | NULL    |                |
+| direccion | varchar(255) | YES  |     | NULL    |                |
++-----------+--------------+------+-----+---------+----------------+
+
+Continuamos ahora sí, ya se puede decir que se normalizo la tabla Proveedores, debido a que todos los atributos dependen completamente de id y se cumple la regla 1FN.
+
+Ahora, una vez esto, podemos crear la tabla contactoproveedores antes de continuar:
+
+CREATE TABLE IF NOT EXISTS contactoproveedores(
+	id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+	proveedores_id INT NOT NULL,
+	CONSTRAINT fk_proveedores_id
+	FOREIGN KEY (proveedores_id)
+	REFERENCES proveedores(id),
+	contacto_nombre VARCHAR(100) NOT NULL,
+	telefono VARCHAR(20) NOT NULL,
+	email VARCHAR(100) NOT NULL
+	) ENGINE=INNODB;
+
+Una vez creada, revisamos con:
+
+DESC contactoproveedores;
+
+Debería salir así:
+
++-----------------+--------------+------+-----+---------+----------------+
+| Field           | Type         | Null | Key | Default | Extra          |
++-----------------+--------------+------+-----+---------+----------------+
+| id              | int          | NO   | PRI | NULL    | auto_increment |
+| proveedores_id  | int          | NO   | MUL | NULL    |                |
+| contacto_nombre | varchar(100) | NO   |     | NULL    |                |
+| telefono        | varchar(20)  | NO   |     | NULL    |                |
+| email           | varchar(100) | NO   |     | NULL    |                |
++-----------------+--------------+------+-----+---------+----------------+
+	
+Ahora, una vez desarrollado esto.. ¿Cumplira con la 3FN?
+
+3. ¿Se cumple con la 3FN?
+
+Ahora sí, si cumple con la 3FN, ya que cumple con la regla 2FN y no hay dependencias transitivas,ya que todo atributo depende del id.
+
+-------------------------------------------------------------------
+| 		       Sexto Paso (Punto 6) 			  |
+-------------------------------------------------------------------
+
+6. Crear una tabla de Telefonos para almacenar múltiples números por cliente
+
+OBSERVACIONES: 
+Bien, como vemos, ya tengo la tabla de clientes normalizada, deduzco que solo será agregar la tabla que, como menciona, me permita almacenar multiples números por cliente, con esto, ya puedo deducir que directamente se relaciona con la tabla clientes, por ende, dentro de esta debe haber una FK
+
+| Solución: |
+
+Empezamos a desarrollar las FN..
+
+1. 1FN:
+
+La desarrollaremos mirando que si cumpla con lo que es. (Valores atomicos y no tener campos multievaluados)
+
+CREATE TABLE IF NOT EXISTS telefonocliente(
+	id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+	cliente_id INT NOT NULL,
+	CONSTRAINT fk_tlf_cliente_id
+	FOREIGN KEY (cliente_id)
+	REFERENCES clientes(id),
+	num_telefono VARCHAR(30) NOT NULL
+	) ENGINE=INNODB;
+
+Con esto, estaría resuelto en la 1FN, ya que contiene valores atomicos y campos no repetitivos.
+
+Ahora, procedemos con.. Desarrollar la 2FN
+
+2. 2FN:
+
+Crearemos tipo_telefono para que se pueda establecer que tipo de teléfono tiene el contacto. (Móvil, de casa, etc...)
+
+En vez de borrar la tabla como usualmente hago, solo sería implementar el tipo de teléfono, por ende, ejecutare el comando:
+
+ALTER TABLE telefonocliente
+ADD COLUMN tipo_telefono VARCHAR(60) NOT NULL;
+
+Una vez hecho esto, debería quedar así: 
+
+Con esto, estaría hecha la 2FN, debido a que los atributos dependen completamente de la clave primaria (id) y no hay dependencias parciales.
+
+Ahora, el punto clave, el 3FN:
+
+3. 3FN:
+
+Si, de hecho, fue como algo de 2 pájaros de un tiro, debido a que, hice la 2FN y tampoco hay dependencias transitivas, también porque claramente los atributos dependen de la clave primaria y no de otras claves que no sean la primaria.
+
+RESULTADO FINAL: 
+
++---------------+-------------+------+-----+---------+----------------+
+| Field         | Type        | Null | Key | Default | Extra          |
++---------------+-------------+------+-----+---------+----------------+
+| id            | int         | NO   | PRI | NULL    | auto_increment |
+| cliente_id    | int         | NO   | MUL | NULL    |                |
+| num_telefono  | varchar(30) | NO   |     | NULL    |                |
+| tipo_telefono | varchar(60) | NO   |     | NULL    |                |
++---------------+-------------+------+-----+---------+----------------+
+
+-------------------------------------------------------------------
+| 		       Séptimo Paso (Punto 7) 			  |
+-------------------------------------------------------------------
+
+7. Transformar TiposProductos en una relación categórica jerárquica.
+
+Observación + Aclaración:
+
+Bien, investigué acerca del uso de las relaciones categóricas jerárquicas, encontré que para hacer este tipo de jerarquía es necesario establecer una FK que sea propia, es decir, que su REFERENCE sea la misma tabla de la FOREIGN KEY.
+
+Para esto, el ejercicio solo pide transformar tiposproductos en una relación categorica jerarquica, ya normalizamos esto antes, asi que, solo seria hacer lo siguiente:
+
+| Solución: |
+
+ALTER TABLE tiposproductos
+ADD COLUMN categoria_jerarquica_id INT NOT NULL,
+ADD FOREIGN KEY (categoria_jerarquica_id)
+REFERENCES tiposproductos(id);
+
+Una vez salga el OK, nos aseguramos de que este correctamente establecida con:
+
+DESC tiposproductos;
+
+Con esto, ya quedaría hecho el punto 7.
+
+-------------------------------------------------------------------
+| 		       Octavo Paso (Punto 8) 			  |
+-------------------------------------------------------------------
+
+8. Normalizar Pedidos y DetallesPedido para evitar inconsistencias de precios.
+
+| Observación: |
+
+Bien, se pide normalizar las 2 tablas, cabe aclarar que pedidos ya esta normalizada. Pero, he analizado que de detallespedido tiene la FK de la id de producto, en la cual, hay una inconsistencia, ya que en detallespedido esta el precio de producto y producto también tiene precio, asi que, para comprobar esto, debemos saber que productos ya esta normalizado, mientras que detallespedido no sabemos exactamente si lo esta, en ese caso, lo normalizaremos.
+
+1. 1FN 
+
+Si, si esta normalizada en 1FN, ya que no tiene campos multievaluados y tiene un valor atomico
+
+2. 2FN
+
+Si, si esta normalizada en 2FN, ya que cumple con la 1FN y no hay dependencias parciales.
+
+3. 3FN
+
+Aquí esta el problema, y es que aunque cumpla la 2FN, tiene dependencias transitivas, ya que precio depende de producto_id, no directamente de la llave primaria como se tiene que ser.
+
+Simplemente, el error esta en que precio esta repetido, ya que como vemos, en producto_id esta el precio. Por ende, solo ejecutaríamos este comando para normalizarlo:
+
+ALTER TABLE detallespedido DROP COLUMN precio;
+
+Una vez ejecutado este comando ya tendríamos la tercera forma normal.
+
+-------------------------------------------------------------------
+| 		       Noveno Paso (Punto 9) 			  |
+-------------------------------------------------------------------
+
+9. Usar una relación de muchos a muchos para Empleados y Proveedores.
+
+| Observación: Como sabemos, no se puede hacer que una relación de tablas sea de mucho a mucho, por eso, necesitaremos una tabla intermedia llamada empleadosproveedores.
+
+CREATE TABLE IF NOT EXISTS empleadosproveedores(
+	empleado_id INT NOT NULL,
+	CONSTRAINT fk_empleado_id
+	FOREIGN KEY (empleado_id)
+	REFERENCES datosempleados(id),
+	proveedor_id INT NOT NULL,
+	CONSTRAINT fk_proveedor_id
+	FOREIGN KEY (proveedor_id)
+	REFERENCES proveedores(id),
+	fecha_asignacion DATE NOT NULL,
+	PRIMARY KEY (empleado_id, proveedor_id)
+	) ENGINE=INNODB;
+
+| Solución (Explicación) |
+
+Hice esto debido a que claramente, como explique anteriormente, no podemos hacer una relación mucho a mucho, siempre necesitaremos una tabla intermedia, por ende... la explicación mas lógica a esto es que en esa tabla agregue las 2 FK (tabla datosempleados y la tabla proveedores), también una fecha de asignación
+ahora bien, esta ultima parte tiene su explicación, y es que esta fecha_asignacion la agregue para que no hubiese ambigüedades, como las de simplemente poner las FK y ya, ya que seria una tabla nada mas que conectora, y podríamos utilizar esto como por ejemplo para saber sobre el tiempo asignado o registros de los atendimientos.
+
+-------------------------------------------------------------------
+| 		       Decimo Paso (Punto 10) 			  |
+-------------------------------------------------------------------
+
+10. Convertir la tabla UbicacionCliente en una relación genérica de Ubicaciones.
+
+| Observación: 
+
+Bien, ahora para poder hacer esto, nos pide que sea genérico, por ende, debemos cambiar ubicacioncliente  ubicación, empecemos..
+
+RENAME TABLE ubicacioncliente to ubicaciones;
+
+Una vez cambiado el nombre, ahora procedemos a votar cliente_id,ya que lo haremos genérico.
+
+ALTER TABLE ubicaciones
+DROP COLUMN cliente_id;
+
+Pero, hay un error, y es que me tira que esta columna es requerida en una foreign key, por ende, para quitar esto, vamos a dropear la foreign key de esta.
+
+ALTER TABLE ubicaciones
+DROP FOREIGN KEY ubicacion_ibfk_1;
+
+Ahora si, podemos proceder a dropear la columna cliente_id
+
+Una vez hecho, procedemos a implementar el tipo_entidad e entidad_id
+
+ALTER TABLE ubicaciones
+ADD tipo_entidad VARCHAR(50) NOT NULL AFTER id,
+ADD entidad_id INT NOT NULL AFTER tipo_entidad;
+
+Revisamos el estado de ubicación:
+
+DESC ubicaciones;
+
+Apareceria asi: 
+
++---------------+--------------+------+-----+---------+----------------+
+| Field         | Type         | Null | Key | Default | Extra          |
++---------------+--------------+------+-----+---------+----------------+
+| id            | int          | NO   | PRI | NULL    | auto_increment |
+| tipo_entidad  | varchar(50)  | NO   |     | NULL    |                |
+| entidad_id    | int          | NO   |     | NULL    |                |
+| direccion     | varchar(255) | YES  |     | NULL    |                |
+| ciudad        | varchar(100) | YES  |     | NULL    |                |
+| estado        | varchar(50)  | YES  |     | NULL    |                |
+| codigo_postal | varchar(10)  | YES  |     | NULL    |                |
+| pais          | varchar(50)  | YES  |     | NULL    |                |
++---------------+--------------+------+-----+---------+----------------+
